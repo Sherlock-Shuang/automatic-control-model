@@ -1,0 +1,11 @@
+streamlit
+langchain-chroma
+langchain-huggingface
+langchain-community
+langchain-core
+langchain-text-splitters
+dashscope
+python-dotenv
+tqdm
+ollama
+chromadb
