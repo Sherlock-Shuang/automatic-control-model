@@ -5,18 +5,42 @@ from typing import List
 
 from backend.models.schemas import TaskCreateRequest, GradingReportResponse, GradingReportItem, RubricItem
 from backend.services.ai_pipeline import node_a_extract_steps, node_b_logic_matcher, node_c_rag_feedback
-from backend.services.supabase_db import similarity_search
-from langchain_openai import OpenAIEmbeddings
+from backend.services.local_db import similarity_search
+
+import os
 
 router = APIRouter()
-embed_model = OpenAIEmbeddings(model="text-embedding-3-small")
 
-tasks_db = {} # MVP: memory dictionary to store standard tasks
+TASKS_FILE = "tasks.json"
+tasks_db = {}
+
+# 启动时自动从本地文件加载已有的任务规则
+if os.path.exists(TASKS_FILE):
+    try:
+        with open(TASKS_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            # 将字典转换回 Pydantic 对象
+            for tid, tdata in data.items():
+                tasks_db[tid] = TaskCreateRequest(**tdata)
+        print(f"✅ 已从本地加载了 {len(tasks_db)} 个作业任务规则。")
+    except Exception as e:
+        print(f"⚠️ 加载备份任务失败: {e}")
+
+def save_tasks():
+    """将内存中的任务保存到本地文件"""
+    try:
+        with open(TASKS_FILE, "w", encoding="utf-8") as f:
+            # 序列化 Pydantic 对象
+            json_data = {tid: task.model_dump() for tid, task in tasks_db.items()}
+            json.dump(json_data, f, ensure_ascii=False, indent=4)
+    except Exception as e:
+        print(f"⚠️ 保存任务失败: {e}")
 
 @router.post("/upload_task")
 async def upload_task(task: TaskCreateRequest):
     """教师上传本次作业的题干、标准答案及得分细则 (Rubric)"""
     tasks_db[task.task_id] = task
+    save_tasks() # 存入本地文件
     return {"message": "Task created successfully", "task_id": task.task_id}
 
 @router.post("/grade_homework", response_model=GradingReportResponse)
@@ -54,11 +78,8 @@ async def grade_homework(
          raise HTTPException(status_code=500, detail=f"Logic Matching failed: {str(e)}")
 
     # 4. Node C: RAG Feedback
-    def embed_func(text: str) -> List[float]:
-        return embed_model.embed_query(text)
-        
     try:
-        final_assessment = node_c_rag_feedback(grading_results, similarity_search, embed_func)
+        final_assessment = node_c_rag_feedback(grading_results, similarity_search)
     except Exception as e:
         # Fallback if DB doesn't work, don't crash MVP entirely
         final_assessment = {

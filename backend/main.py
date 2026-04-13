@@ -1,9 +1,17 @@
+import os
+from dotenv import load_dotenv
+
+# 1. 优先加载环境变量 (必须在导入 homework 之前，否则 ai_pipeline 获取不到 key)
+load_dotenv()
+
+# 2. 确保不会被本地代理干扰 API 调用
+os.environ['http_proxy'] = ''
+os.environ['https_proxy'] = ''
+os.environ['ALL_PROXY'] = ''
+
 from fastapi import FastAPI
 from backend.api import homework
 import uvicorn
-from dotenv import load_dotenv
-
-load_dotenv()
 
 app = FastAPI(title="智能作业批改系统 MVP 版", version="1.0.0")
 
