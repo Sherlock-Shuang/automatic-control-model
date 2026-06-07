@@ -3,9 +3,17 @@ langchain-chroma
 langchain-huggingface
 langchain-community
 langchain-core
+langchain-openai
 langchain-text-splitters
 dashscope
 python-dotenv
 tqdm
 ollama
 chromadb
+PyMuPDF
+Pillow
+fastapi
+uvicorn
+python-multipart
+pydantic
+requests

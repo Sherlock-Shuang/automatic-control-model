@@ -20,5 +20,32 @@
                 "points": 6.0
             }
         ]
+    },
+    "exam_2023": {
+        "task_id": "exam_2023",
+        "title": "2023年测试题2",
+        "standard_answer": "【步骤1】：列出前向传递函数 G(s) 和反馈传递函数 H(s)。\n【步骤2】：求开环传递函数和特征方程。\n【步骤3】：使用劳斯判据列写劳斯表。\n【步骤4】：根据劳斯表判断系统稳定性。",
+        "rubric": [
+            {
+                "step_id": 1,
+                "description": "正确列出传递函数",
+                "points": 2.5
+            },
+            {
+                "step_id": 2,
+                "description": "正确求特征方程",
+                "points": 2.5
+            },
+            {
+                "step_id": 3,
+                "description": "正确列写劳斯表",
+                "points": 2.5
+            },
+            {
+                "step_id": 4,
+                "description": "正确判断稳定性",
+                "points": 2.5
+            }
+        ]
     }
 }
