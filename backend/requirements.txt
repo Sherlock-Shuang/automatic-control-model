@@ -1,13 +1,12 @@
-fastapi==0.111.0
-uvicorn==0.29.0
-langchain==0.1.16
-langchain-openai==0.1.3
-langchain-chroma==0.1.0
-langchain-huggingface==0.0.3
-langchain-community==0.0.34
-dashscope==1.17.0
-python-multipart==0.0.9
-pydantic==2.7.0
-python-dotenv==1.0.1
-PyMuPDF>=1.24.0
-Pillow>=10.0.0
+# Install the root requirements.txt to include the compatible binary constraints.
+fastapi==0.128.0
+uvicorn==0.40.0
+langchain-openai==1.1.7
+langchain-chroma==1.1.0
+langchain-huggingface==1.2.1
+sentence-transformers==5.2.3
+python-multipart==0.0.21
+pydantic==2.12.5
+python-dotenv==1.2.2
+PyMuPDF==1.27.2.2
+Pillow==10.0.1

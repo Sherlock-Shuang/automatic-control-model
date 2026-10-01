@@ -17,18 +17,16 @@ def pdf_to_images(pdf_bytes: bytes, dpi: int = 200) -> list[bytes]:
     Returns:
         每页图片的 JPEG 字节列表
     """
-    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-    images = []
-    
-    for page in doc:
-        # 渲染页面为像素图
-        pix = page.get_pixmap(dpi=dpi)
-        # 转换为 JPEG 字节
-        img_bytes = pix.tobytes("jpeg")
-        images.append(img_bytes)
-    
-    doc.close()
-    return images
+    with fitz.open(stream=pdf_bytes, filetype="pdf") as doc:
+        if doc.needs_pass or not 1 <= len(doc) <= 20:
+            raise ValueError("PDF 不能加密，且必须包含 1 至 20 页")
+        images = []
+        for page in doc:
+            if page.rect.width * page.rect.height * (dpi / 72) ** 2 > 20_000_000:
+                raise ValueError("PDF 页面过大，请缩小页面后重试")
+            pix = page.get_pixmap(dpi=dpi, colorspace=fitz.csRGB, alpha=False)
+            images.append(pix.tobytes("jpeg"))
+        return images
 
 
 def pdf_page_to_base64(pdf_bytes: bytes, page_index: int = 0, dpi: int = 150) -> str:

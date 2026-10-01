@@ -1,19 +1,10 @@
-streamlit
-langchain-chroma
-langchain-huggingface
-langchain-community
-langchain-core
-langchain-openai
-langchain-text-splitters
-dashscope
-python-dotenv
-tqdm
-ollama
-chromadb
-PyMuPDF
-Pillow
-fastapi
-uvicorn
-python-multipart
-pydantic
-requests
+-c constraints.txt
+-r backend/requirements.txt
+-r frontend/requirements.txt
+
+# Existing course Q&A and textbook ingestion tools.
+langchain-community==0.4.1
+langchain-text-splitters==1.1.1
+dashscope==1.25.14
+tqdm==4.66.5
+ollama==0.6.1

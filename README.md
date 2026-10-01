@@ -1,109 +1,95 @@
-# 🤖 《自动控制原理》智能助教 & 自动批改系统 (MVP)
+# 《自动控制原理》课程助教与作业辅助批改
 
-本项目是一个基于 **大视觉语言模型 (VLM)** 与 **检索增强生成 (RAG)** 技术的智能作业批改系统。它不仅能回答课程相关问题，更能实现“识别学生手写作业 -> 对比标准答案 -> 给出得分与扣分项分析 -> 引用教材知识点进行个性化反馈”的全流程。
+课程问答使用本地教材检索；教师工作台支持题目与评分规则管理、图片/PDF 辅助批改、原作业保存和人工复核。AI 输出为建议分，教师确认后才标记为已复核。
 
----
+## 安装
 
-## ✨ 核心功能
+建议使用 Python 3.12，在项目根目录创建独立环境：
 
-- 📝 **智能作业批改 (NEW)**：
-    - **视觉步骤提取**：采用 Qwen-VL-Plus 识别手写公式、推导步骤及专业符号。
-    - **逻辑判分引擎**：通过 Chain-of-Thought (CoT) 将学生解答与教师标答、评分细则 (Rubric) 进行逻辑比对。
-    - **RAG 错因诊断**：一旦检出错误，自动检索本地课本向量库，给出专业教材出处的讲解反馈。
-- 📚 **全能助教 Q&A**：
-    - **图文检索**：支持教材内容、公式及原图的关联检索。
-    - **LaTeX 支持**：所有计算推导过程均以标准 LaTeX 格式呈现。
-- 💾 **持久化管理**：
-    - **任务缓存**：本地 `tasks.json` 保存教师设定的评分规则，服务器重启依然有效。
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+```
 
----
+把 `.env.example` 复制为 `.env`，填写自己的模型密钥。仓库只包含应用代码、依赖、配置模板及使用说明；教材、知识库、学生作业、任务记录、评测脚本与结果不随代码分发。
 
-## 🛠️ 技术架构
+## 配置
 
-系统采用前后端分离架构，核心逻辑微服务化：
+| 配置项 | 用途 |
+| --- | --- |
+| `DASHSCOPE_API_KEY` | 模型服务密钥；也支持 `OPENAI_API_KEY` |
+| `OPENAI_BASE_URL` | OpenAI 兼容模型接口地址 |
+| `VISION_MODEL` / `LOGIC_MODEL` | 视觉识别与评分/问答使用的模型 |
+| `HOMEWORK_API_BASE_URL` | 教师工作台连接的后端根地址，默认 `http://localhost:8000` |
+| `HOMEWORK_TASKS_PATH` | 本地任务文件，默认 `output/tasks.json`；相对路径基于项目根目录 |
+| `CHROMA_DB_PATH` / `CHROMA_COLLECTION` | 已有教材知识库的位置与集合名 |
+| `EMBEDDING_MODEL` | 建库时使用的嵌入模型名称或本地模型目录 |
+| `EMBEDDING_LOCAL_FILES_ONLY` | 默认 `true`，只加载本地已有模型 |
 
-| 模块 | 技术实现 |
-|------|------|
-| **后端接口 (API)** | Python + FastAPI |
-| **前端界面 (UI)** | Streamlit |
-| **AI 编排框架** | LangChain |
-| **视觉模型 (VLM)** | 阿里云通义千问 Qwen-VL-Plus (OpenAI 兼容模式) |
-| **逻辑/对话模型** | 阿里云通义千问 Qwen-Long / Qwen-Max |
-| **本地向量库** | ChromaDB + BAAI/bge-small-zh-v1.5 (本地推理) |
+没有填写任务时工作台保持空白，不加载固定示例题或预设答案。题干、标准答案和评分细则由教师输入并保存在本地任务文件中。
 
----
+## 准备教材知识库
 
-## 📁 项目结构
+请通过团队约定的资料渠道取得教材索引与所需教材原图，放到本地目录，再配置 `CHROMA_DB_PATH`。克隆代码本身不会带回教材和学生资料。数据库不存在、为空或与嵌入模型不匹配时，应用会提示知识库不可用。
+
+嵌入模型尚未缓存时，可显式允许首次下载，完成后恢复为本地加载。若已有模型目录，直接在 `.env` 中配置 `EMBEDDING_MODEL`。
+
+```powershell
+$env:EMBEDDING_LOCAL_FILES_ONLY = 'false'
+.\.venv\Scripts\python.exe -c "from dotenv import load_dotenv; load_dotenv(); from backend.services.local_db import get_vectorstore; get_vectorstore()"
+$env:EMBEDDING_LOCAL_FILES_ONLY = 'true'
+```
+
+旧索引无法打开时，可从其中保存的原文重建到独立目录。下列工具先只读检查；加 `--run` 才写入新索引。源目录保留，目标目录必须为空或不存在。
+
+```powershell
+.\.venv\Scripts\python.exe scripts/rebuild_knowledge_base.py --source chroma_db --destination output/course-knowledge-base
+.\.venv\Scripts\python.exe scripts/rebuild_knowledge_base.py --source chroma_db --destination output/course-knowledge-base --run
+```
+
+重建保留完整原文及分块位置，并独立重新打开索引检查持久化结果。完成清单状态为 `complete` 后再更新 `CHROMA_DB_PATH`，并重新启动应用。
+
+Windows 下请从项目根目录运行。为兼容底层索引库的中文路径限制，应用在必要时使用指向同一目录的英文相对路径；不会移动教材或建立外部目录联接。
+
+## 启动
+
+Windows PowerShell 7 可使用后台启动器；日志保存在本地 `output/runtime/`。
+
+```powershell
+.\scripts\start_local.ps1 -Mode teacher
+.\scripts\start_local.ps1 -Mode chat
+```
+
+- 教师工作台：http://127.0.0.1:8501
+- 后端：http://127.0.0.1:8000
+- 课程问答：http://127.0.0.1:8502
+
+其他平台或手动启动，在激活虚拟环境后的三个终端中分别运行：
 
 ```text
-├── backend/                # 核心批改引擎 & 后端服务
-│   ├── api/                # API 路由 (作业上传、规则设定)
-│   ├── services/           
-│   │   ├── ai_pipeline.py  # AI 三阶段工作流 (视觉、匹配、RAG反馈)
-│   │   └── local_db.py     # 本地 Chroma 数据库连接器
-│   ├── main.py             # 后端入口 (FastAPI)
-│   └── requirements.txt    # 后端依赖
-├── frontend/               # 老师/助教演示控制台
-│   ├── app.py              # Streamlit 界面
-│   └── requirements.txt    # 前端依赖
-├── build_vector_db.py      # 构建本地教科书向量库 (RAG 核心)
-├── chroma_db/              # 本地向量库文件夹 (需自行构建)
-├── .env                    # 环境配置文件 (存放 API Key)
-└── README.md
+python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
+python -m streamlit run frontend/app.py --server.address 127.0.0.1 --server.port 8501
+python -m streamlit run app.py --server.address 127.0.0.1 --server.port 8502
 ```
 
----
+`scripts/check_runtime.py` 检查本地依赖及已有索引，不调用远程模型。正常访问首页、编辑任务和查看历史不需要调用模型；识别、评分和生成问答会调用配置的服务。
 
-## 🚀 部署与使用
+## 使用流程
 
-### 1. 安装环境
-建议使用虚拟环境（如 Conda 或 venv）：
-```bash
-# 安装后端依赖
-pip install -r backend/requirements.txt
+1. 创建题目，填写完整条件、教师确认的标准答案及逐项评分细则；也可加载已有本地任务。
+2. 单份或批量上传作业。同一份多页作业请合并为 PDF；每个文件不超过 20 MB，PDF 最多 20 页，每批最多 100 份。
+3. 对照原件、识别文字、逐项建议分和判分依据。无法辨认、教师红笔批注、无效模型输出或矛盾证据会进入待复核，不能当作零分统计。
+4. 教师确认或调整逐项成绩，填写复核人及说明。系统保存原 AI 建议和人工复核记录。
 
-# 安装前端依赖
-pip install -r frontend/requirements.txt
-```
+教材讲解只引用教材正文，图片生成说明仅用于定位原图。讲解失败不会覆盖已校验的建议分；教材依据不足时不能编造结论。模型输出不等同于教师最终成绩。
 
-### 2. 配置密钥
-在根目录下创建/修改 `.env` 文件：
-```env
-# 阿里云百炼 API Key
-DASHSCOPE_API_KEY=sk-你的密钥
+当前面向本机、单后端进程使用。复核人字段属于本机记录，并非经过身份认证的电子签名。
 
-# 模型选择
-VISION_MODEL=qwen-vl-plus
-LOGIC_MODEL=qwen-long
-```
+## 代码结构
 
-### 3. 构建本地知识库 (RAG)
-运行构建脚本，它会使用 BGE 模型将 `output/` 下的教材 Markdown 向量化：
-```bash
-python build_vector_db.py
-```
-
-### 4. 运行系统
-需要同时开启两个终端进程：
-
-**终端 A (后台服务)：**
-```bash
-python -m backend.main
-```
-
-**终端 B (互动界面)：**
-```bash
-streamlit run frontend/app.py
-```
-
----
-
-## 👨‍🏫 批改演示流程
-1. **录入规则**：在网页 **Tab 1** 设定本次作业的题目描述和评分细则（支持 JSON 修改分值）。
-2. **执行批改**：在 **Tab 2** 上传学生的作业照片。
-3. **查看报告**：系统生成步骤级反馈，对于错题会额外显示“📚 RAG 课本知识引申”，引导学生查漏补缺。
-
----
-
-## 📄 License
-MIT License
+- `frontend/`：教师工作台及共享界面样式。
+- `app.py` / `ask_db.py`：网页与命令行课程问答。
+- `backend/api/`：任务、作业、报告与人工复核接口。
+- `backend/services/`：转录、评分校验、教材检索、原件与报告存储。
+- `scripts/`：本地环境检查、索引重建和启动工具。
+- `output/`：本地生成的任务、报告、原件和运行记录，不进入仓库。

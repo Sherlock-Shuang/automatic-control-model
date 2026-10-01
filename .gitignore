@@ -17,6 +17,26 @@ env/
 chroma_db/
 output/
 
+# 本地项目资料仅用于研究和评测，不随代码提交
+/项目资料/
+/自动控制原理.md
+/自动控制原理.pdf
+/.uploads/
+
+# Local datasets, fixed examples and historical one-off ingestion scripts.
+/chroma_db_bak/
+/tasks.json
+/智能助教.md
+/build_vector_db.py
+/split_book.py
+/local_process_images.py
+/process_images_to_db.py
+
+# Evaluation tooling and records stay local for this code-only distribution.
+/tests/
+/scripts/evaluate_live.py
+/requirements-dev.txt
+
 # ========== macOS ==========
 .DS_Store
 .AppleDouble

@@ -1,0 +1,11 @@
+# Binary/embedding stack used by the project's isolated Python 3.12 environment.
+# Keep NumPy 1.x with these pandas/PyArrow wheels; installing into an unrelated
+# global environment can still leave incompatible optional packages behind.
+numpy==1.26.4
+pandas==2.2.2
+pyarrow==16.1.0
+torch==2.9.1
+transformers==5.1.0
+chromadb==1.5.5
+scipy==1.17.1
+scikit-learn==1.8.0
